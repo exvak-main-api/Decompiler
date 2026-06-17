@@ -1,15 +1,13 @@
 from parser import ChunkParser
-from disassembler import Disassembler
+from analyzer import Analyzer
 
 with open("sample.luau", "rb") as f:
     data = f.read()
 
 chunk = ChunkParser(data).parse()
 
-dis = Disassembler()
-
-print(
-    dis.disassemble_proto(
-        chunk.main_proto
-    )
+lua_code = Analyzer().analyze(
+    chunk.main_proto
 )
+
+print(lua_code)
