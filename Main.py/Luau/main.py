@@ -1,13 +1,34 @@
 from parser import ChunkParser
-from analyzer import Analyzer
+from decompiler import Decompiler
+from optimizer import Optimizer
 
-with open("sample.luau", "rb") as f:
-    data = f.read()
 
-chunk = ChunkParser(data).parse()
+def load_file(path):
+    with open(path, "rb") as f:
+        return f.read()
 
-lua_code = Analyzer().analyze(
-    chunk.main_proto
-)
 
-print(lua_code)
+def main():
+
+    data = load_file("sample.luau")
+
+    chunk = ChunkParser(data).parse()
+
+    decompiler = Decompiler()
+    optimizer = Optimizer()
+
+    ast_tree = decompiler.build_ast(chunk.main_proto)
+
+    optimized = optimizer.optimize(ast_tree)
+
+    if optimized is None:
+        print("-- empty output")
+        return
+
+    output = decompiler.generator.generate(optimized)
+
+    print(output)
+
+
+if __name__ == "__main__":
+    main()
