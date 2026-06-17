@@ -1,6 +1,7 @@
 from parser import ChunkParser
 from decompiler import Decompiler
 from optimizer import Optimizer
+from namer import Namer
 
 
 def load_file(path):
@@ -16,16 +17,15 @@ def main():
 
     decompiler = Decompiler()
     optimizer = Optimizer()
+    namer = Namer()
 
     ast_tree = decompiler.build_ast(chunk.main_proto)
 
     optimized = optimizer.optimize(ast_tree)
 
-    if optimized is None:
-        print("-- empty output")
-        return
+    named = namer.rename(optimized)
 
-    output = decompiler.generator.generate(optimized)
+    output = decompiler.generator.generate(named)
 
     print(output)
 
