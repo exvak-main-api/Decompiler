@@ -2,6 +2,7 @@ from parser import ChunkParser
 from decompiler import Decompiler
 from optimizer import Optimizer
 from namer import Namer
+from reconstructor import Reconstructor
 
 
 def load_file(path):
@@ -12,20 +13,20 @@ def load_file(path):
 def main():
 
     data = load_file("sample.luau")
-
     chunk = ChunkParser(data).parse()
 
     decompiler = Decompiler()
     optimizer = Optimizer()
     namer = Namer()
+    reconstructor = Reconstructor()
 
     ast_tree = decompiler.build_ast(chunk.main_proto)
 
-    optimized = optimizer.optimize(ast_tree)
+    ast_tree = optimizer.optimize(ast_tree)
+    ast_tree = namer.rename(ast_tree)
+    ast_tree = reconstructor.reconstruct(ast_tree)
 
-    named = namer.rename(optimized)
-
-    output = decompiler.generator.generate(named)
+    output = decompiler.generator.generate(ast_tree)
 
     print(output)
 
