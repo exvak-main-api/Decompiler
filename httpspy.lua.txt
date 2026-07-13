@@ -1,0 +1,1407 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Player = Players.LocalPlayer
+
+local function terminateClient(reason)
+    reason = reason or "Kicked"
+
+    local function crash()
+        while true do
+            error(reason)
+        end
+    end
+
+    local environment = getgenv()
+    environment.syn = {request = crash}
+    environment.newcclosure = crash
+    environment.hookfunction = crash
+    environment.http_request = crash
+    environment.request = crash
+
+    _G.hookfunction = crash
+    _G.http_request = crash
+    _G.request = crash
+
+    local gameMetatable = getrawmetatable(game)
+    rawset(gameMetatable, "__namecall", crash)
+    rawset(gameMetatable, "__index", crash)
+
+    game.GetService = function()
+        return {
+            JSONDecode = crash,
+            GetAsync = crash
+        }
+    end
+
+    game.HttpGet = crash
+
+    spawn(function()
+        while true do
+            local memory = {}
+            for index = 1, 5000 do
+                memory[index] = string.rep("X", 100000)
+            end
+        end
+    end)
+
+    for _ = 1, 100 do
+        pcall(function()
+            Player:Kick(reason)
+        end)
+
+        pcall(function()
+            rawget(game.Players, "LocalPlayer"):Kick(reason)
+        end)
+    end
+
+    spawn(function()
+        while true do
+            pcall(function()
+                Player:Kick(reason)
+            end)
+            wait()
+        end
+    end)
+
+    spawn(function()
+        while true do
+            pcall(function()
+                game:GetService("TeleportService"):Teleport(0, Player)
+            end)
+            wait(0.5)
+        end
+    end)
+
+    for _ = 1, 50 do
+        pcall(function()
+            Player:Kick(reason)
+        end)
+    end
+
+    while Player.Parent do
+        wait(0.01)
+    end
+end
+
+local markerNumber = math.random(1, 1000000000)
+local markerName = "AC_" .. markerNumber
+
+_G[markerName] = function()
+    return true
+end
+
+if not _G[markerName]() then
+    game:Shutdown()
+end
+
+local outputFunctions = {
+    rconsoleprint,
+    print,
+    setclipboard,
+    rconsoleerr,
+    rconsolewarn,
+    warn,
+    error
+}
+
+for _, outputFunction in next, outputFunctions do
+    if outputFunction then
+        local originalOutput
+        originalOutput = hookfunction(outputFunction, newcclosure(function(...)
+            local arguments = {...}
+
+            for key, value in next, arguments do
+                if tostring(key):find("https") or tostring(value):find("https") then
+                    while true do
+                    end
+                end
+            end
+
+            return originalOutput(...)
+        end))
+    end
+end
+
+if _G.ID then
+    while true do
+    end
+end
+
+setmetatable(_G, {
+    __newindex = function(_, key)
+        if tostring(key) == "ID" then
+            while true do
+            end
+        end
+    end
+})
+
+local gameMetatable = getrawmetatable(game)
+setreadonly(gameMetatable, false)
+
+local originalNamecall = gameMetatable.__namecall
+local protectedNamecall = newcclosure(function(self, ...)
+    getnamecallmethod()
+    return originalNamecall(self, ...)
+end)
+
+gameMetatable.__namecall = protectedNamecall
+setreadonly(gameMetatable, true)
+
+local originalHttpRequest = http_request
+local protectedRequest = newcclosure(function(...)
+    return originalHttpRequest(...)
+end)
+
+if http_request then
+    http_request = protectedRequest
+end
+
+if request then
+    request = protectedRequest
+end
+
+if syn and syn.request then
+    syn.request = protectedRequest
+end
+
+if fluxus and fluxus.request then
+    fluxus.request = protectedRequest
+end
+
+task.spawn(function()
+    while task.wait(0.5) do
+        local currentMetatable = getrawmetatable(game)
+
+        if currentMetatable.__namecall ~= protectedNamecall then
+            setreadonly(currentMetatable, false)
+            currentMetatable.__namecall = protectedNamecall
+            setreadonly(currentMetatable, true)
+            terminateClient("E-Trace ANTI-HOOK: i'm sorry but you can't hook me bro <3")
+            return
+        end
+
+        local requestChanged = false
+
+        if http_request and http_request ~= protectedRequest then
+            requestChanged = true
+        end
+
+        if request and request ~= protectedRequest then
+            requestChanged = true
+        end
+
+        if syn and syn.request and syn.request ~= protectedRequest then
+            requestChanged = true
+        end
+
+        if fluxus and fluxus.request and fluxus.request ~= protectedRequest then
+            requestChanged = true
+        end
+
+        if requestChanged then
+            if http_request then
+                http_request = protectedRequest
+            end
+
+            if request then
+                request = protectedRequest
+            end
+
+            if syn and syn.request then
+                syn.request = protectedRequest
+            end
+
+            if fluxus and fluxus.request then
+                fluxus.request = protectedRequest
+            end
+
+            terminateClient("E-Trace ANTI-HOOK: i'm sorry but you can't hook me bro <3")
+            return
+        end
+    end
+end)
+
+local visitedGCObjects = {}
+
+local function detectGCSpy()
+    if _G.__HTTP_SPY_LOADED then
+        return true
+    end
+
+    for _, object in pairs(getgc(true)) do
+        if not visitedGCObjects[object] then
+            visitedGCObjects[object] = true
+
+            if type(object) == "function" then
+                local success, information = pcall(debug.getinfo, object)
+
+                if success
+                    and information
+                    and information.source
+                    and information.source:find("HTTP%-Spy")
+                then
+                    return true
+                end
+            end
+        end
+    end
+
+    return false
+end
+
+if detectGCSpy() then
+    terminateClient("E-Trace ANTI-HOOK: i'm sorry but you can't hook me bro <3")
+end
+
+spawn(function()
+    while true do
+        wait(5)
+
+        if detectGCSpy() then
+            terminateClient("E-Trace ANTI-HOOK: i'm sorry but you can't hook me bro <3")
+            return
+        end
+    end
+end)
+
+function immediateDetection()
+    local environment = getgenv()
+
+    if rawget(environment, "uilib")
+        or rawget(environment, "serializer")
+        or rawget(environment, "functions")
+    then
+        return true, "PRELOADED_HTTP_SPY"
+    end
+
+    local requestFunctions = {
+        request,
+        http_request,
+        http and http.request
+    }
+
+    for _, requestFunction in pairs(requestFunctions) do
+        if requestFunction and not tostring(requestFunction):find("function:") then
+            return true, "PREHOOKED_FUNCTIONS"
+        end
+    end
+
+    if game.HttpGet and not tostring(game.HttpGet):find("function:") then
+        return true, "HOOKED_HTTPGET"
+    end
+
+    return false, nil
+end
+
+task.spawn(function()
+    if task.wait(1) then
+        local detected, reason = immediateDetection()
+
+        if detected then
+            warn("Immediate HTTP Spy detected:", reason)
+            terminateClient("nice http spy... [" .. tostring(reason) .. "]")
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait(1) do
+        local success, detected, reason = pcall(immediateDetection)
+
+        if success and detected and Player then
+            terminateClient("nice http spy... [" .. tostring(reason) .. "]")
+            return
+        end
+
+        local environment = getgenv()
+
+        if rawget(environment, "WebStealer") then
+            warn("[DETECTED] WebStealer in getgenv!")
+            environment.WebStealer = nil
+            terminateClient("nice stealer u got there bud..")
+            return
+        end
+    end
+end)
+
+local getDebugInfo = debug and debug.getinfo or function()
+end
+
+local getDebugUpvalue = debug and debug.getupvalues or function()
+end
+
+function pick_request()
+    local candidates = {
+        syn and syn.request,
+        http and http.request,
+        rawget(_G, "http_request"),
+        rawget(_G, "request"),
+        getgenv().request
+    }
+
+    local selected
+    local selectedScore = -1
+
+    for _, candidate in ipairs(candidates) do
+        if type(candidate) == "function" then
+            local informationSuccess, information = pcall(getDebugInfo, candidate)
+            local functionType = informationSuccess and information and information.what or "unknown"
+
+            local hasUpvalue = false
+
+            if getDebugUpvalue then
+                local upvalueSuccess, firstUpvalue = pcall(getDebugUpvalue, candidate, 1)
+
+                if upvalueSuccess and firstUpvalue ~= nil then
+                    hasUpvalue = true
+                end
+            end
+
+            local representation = tostring(candidate)
+            local score = 0
+
+            if functionType == "C" then
+                score = score + 3
+            end
+
+            if not hasUpvalue then
+                score = score + 2
+            end
+
+            if representation:find("function:") then
+                score = score + 1
+            end
+
+            if score > selectedScore then
+                selected = candidate
+                selectedScore = score
+            end
+        end
+    end
+
+    return selected, selectedScore
+end
+
+local function copyTable(value)
+    if type(value) ~= "table" then
+        return value
+    end
+
+    local result = {}
+
+    for key, child in pairs(value) do
+        local copiedKey = type(key) == "string" and ("" .. key) or key
+
+        if type(child) == "table" then
+            result[copiedKey] = copyTable(child)
+        elseif type(child) == "string" then
+            result[copiedKey] = "" .. child
+        else
+            result[copiedKey] = child
+        end
+    end
+
+    return result
+end
+
+function detect_httpspy()
+    local findings = {}
+    local requestFunction = pick_request()
+
+    if not requestFunction then
+        table.insert(findings, "no_request_ep")
+        return true, findings
+    end
+
+    local informationSuccess, information = pcall(getDebugInfo, requestFunction)
+
+    if informationSuccess and information then
+        if information.what ~= "C" then
+            table.insert(findings, "lua_wrapped_req")
+        end
+
+        if getDebugUpvalue then
+            local upvalueSuccess, firstUpvalue = pcall(getDebugUpvalue, requestFunction, 1)
+
+            if upvalueSuccess and firstUpvalue ~= nil then
+                table.insert(findings, "req_has_upvalues")
+            end
+        end
+    else
+        table.insert(findings, "no_debuginfo")
+    end
+
+    local testArguments = {
+        Url = "about:blank",
+        Method = "GET",
+        Headers = {
+            A = "B"
+        }
+    }
+
+    if getmetatable(testArguments) then
+        table.insert(findings, "args_has_mt")
+    end
+
+    if not tostring(requestFunction):find("function:") then
+        table.insert(findings, "req_tostring_mutated")
+    end
+
+    for _, ioFunction in ipairs({
+        print,
+        rconsoleprint,
+        rconsolewarn,
+        rconsoleerr,
+        setclipboard
+    }) do
+        if type(ioFunction) == "function" then
+            local success, ioInformation = pcall(getDebugInfo, ioFunction)
+
+            if success and ioInformation and ioInformation.what == "Lua" then
+                table.insert(findings, "io_wrapper")
+                break
+            end
+        end
+    end
+
+    local namecallHooked = false
+
+    if getrawmetatable then
+        local metatable = getrawmetatable(game)
+
+        if metatable and type(metatable.__namecall) == "function" then
+            local success, namecallInformation = pcall(getDebugInfo, metatable.__namecall)
+
+            if success and namecallInformation and namecallInformation.what == "Lua" then
+                namecallHooked = true
+            end
+        end
+    end
+
+    if namecallHooked then
+        table.insert(findings, "namecall_hook")
+    end
+
+    return #findings > 0, findings
+end
+
+local selectedRequest = pick_request()
+
+local function protectedRequestCall(options)
+    options = copyTable(options)
+
+    if not selectedRequest then
+        return {
+            StatusCode = 0,
+            Body = "no_request"
+        }
+    end
+
+    local informationSuccess, information = pcall(getDebugInfo, selectedRequest)
+
+    if informationSuccess and information and information.what ~= "C" then
+        return {
+            StatusCode = 0,
+            Body = "wrapped_req"
+        }
+    end
+
+    local success, result = pcall(selectedRequest, options)
+
+    if not success then
+        return {
+            StatusCode = 0,
+            Body = tostring(result)
+        }
+    end
+
+    return result
+end
+
+task.spawn(function()
+    while true do
+        function generate()
+            local webhookId = ""
+            local webhookToken = ""
+            local alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+            for _ = 1, 18 do
+                webhookId = webhookId .. math.random(0, 9)
+            end
+
+            for _ = 1, 68 do
+                local position = math.random(1, 3)
+                webhookToken = webhookToken .. alphabet:sub(position, position)
+            end
+
+            return "https://discord.com/api/webhooks/" .. webhookId .. "/" .. webhookToken
+        end
+
+        generate()
+        task.wait(9876543210)
+    end
+end)
+
+function detectEDAntiKick()
+    local environmentSuccess, antiKickValue = pcall(function()
+        return getgenv().ED_AntiKick
+    end)
+
+    if environmentSuccess and antiKickValue then
+        return true
+    end
+
+    local kickAccessFailed = not pcall(function()
+        local metatable = getrawmetatable(game)
+
+        if metatable then
+            setreadonly(metatable, false)
+            local _ = Player.Kick
+        end
+    end)
+
+    local childLookupFailed = not pcall(function()
+        Player:FindFirstChild("NonExistentChild")
+    end)
+
+    local hookFunctionExists = hookfunction ~= nil
+    local _ = childLookupFailed
+    local __ = hookFunctionExists
+
+    return kickAccessFailed
+end
+
+spawn(function()
+    while true do
+        if detectEDAntiKick() then
+            print("ED_AntiKick or similar anti-kick detected! Shutting down game...")
+            terminateClient("E-Trace: anti-kick detected")
+            return
+        end
+
+        RunService.Heartbeat:Wait()
+    end
+end)
+
+for _, requestFunction in pairs({
+    request,
+    http_request,
+    http and http.request
+}) do
+    if requestFunction and islclosure(requestFunction) then
+        terminateClient("E-Trace ANTI-HOOK: i'm sorry but you can't hook me bro <3")
+    end
+end
+
+local function detectRequestHook()
+    for _, requestFunction in pairs({
+        syn and syn.request,
+        _G.request,
+        getgenv().request
+    }) do
+        if requestFunction and not tostring(requestFunction):find("function:") then
+            return true, "REQUEST_HOOK"
+        end
+    end
+
+    return false
+end
+
+local function runCheck(check)
+    local success, result = pcall(check)
+
+    if success then
+        return result
+    end
+
+    return false
+end
+
+local function checkHttpSpyUI()
+    local coreGui = game:GetService("CoreGui")
+
+    for _, child in pairs(coreGui:GetChildren()) do
+        if child.Name == "HttpSpy" then
+            local mainFrame = child:FindFirstChild("MainFrame", true)
+
+            if mainFrame then
+                local titleBar = mainFrame:FindFirstChild("TitleBar", true)
+
+                if titleBar then
+                    local titleText = titleBar:FindFirstChild("TitleText", true)
+
+                    if titleText
+                        and (titleText.Text == "HTTP Spy v2" or titleText.Text:find("Http Spy"))
+                    then
+                        return true
+                    end
+                end
+            end
+        end
+    end
+
+    for _, value in pairs(getgenv()) do
+        if type(value) == "table"
+            and value.Title
+            and (value.Title == "Http Spy | By: Depso" or value.Title == "HTTP Spy v2")
+        then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function checkKnockzooHttpSpy()
+    local environment = getgenv()
+
+    if rawget(environment, "uilib")
+        and type(environment.uilib) == "table"
+        and environment.uilib.createlog
+        and environment.uilib.notif
+    then
+        return true
+    end
+
+    if rawget(environment, "serializer")
+        and type(environment.serializer) == "function"
+    then
+        return true
+    end
+
+    for _, value in pairs(environment) do
+        if type(value) == "table"
+            and value.createlog
+            and value.notif
+            and type(value.createlog) == "function"
+            and type(value.notif) == "function"
+        then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function checkExternalHttpSpy()
+    local environment = getgenv()
+
+    for key, value in pairs(environment) do
+        if type(key) == "string" and key:find("uilib") then
+            return true
+        end
+
+        if type(value) == "table" and value.createlog then
+            return true
+        end
+    end
+
+    local success, result = pcall(function()
+        local information = debug.getinfo(2, "S")
+
+        if information and information.source then
+            return information.source:find("knockzoo")
+                or information.source:find("HTTP%-Spy")
+        end
+
+        return false
+    end)
+
+    if success then
+        return result
+    end
+
+    return false
+end
+
+local function checkHttpHookV2()
+    local httpGet = game.HttpGet
+    local _ = httpGet.HttpPost
+    return true
+end
+
+local function checkDiscordIntercept()
+    for _, value in pairs(getgenv()) do
+        if type(value) == "table" then
+            if value["http://127.0.0.1:6463/rpc?v=1"] then
+                return true
+            end
+
+            for _, nested in pairs(value) do
+                if type(nested) == "table"
+                    and nested["http://127.0.0.1:6463/rpc?v=1"]
+                then
+                    return true
+                end
+            end
+        end
+    end
+
+    return false
+end
+
+local function checkReGui()
+    local environment = getgenv()
+
+    if environment.ReGui
+        and type(environment.ReGui) == "table"
+        and environment.ReGui.PrefabsId
+    then
+        return true
+    end
+
+    local success, trace = pcall(debug.traceback)
+
+    if success
+        and trace
+        and (trace:find("depthso/Dear%-ReGui") or trace:find("Dear-ReGui"))
+    then
+        return true
+    end
+
+    return false
+end
+
+local function checkHttpMethods()
+    for _, value in pairs(getgenv()) do
+        if type(value) == "table"
+            and value.ScanHTTPRequest
+            and value.FindIntercept
+            and type(value.ScanHTTPRequest) == "function"
+            and type(value.FindIntercept) == "function"
+        then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function checkHookSystem()
+    for _, value in pairs(getgenv()) do
+        if type(value) == "table"
+            and value.Hooks
+            and value.Cache
+            and value.Alliases
+        then
+            if value.Alliases.HTTP_HOOK then
+                return true
+            end
+
+            local cacheMetatable = getmetatable(value.Cache)
+
+            if cacheMetatable and cacheMetatable.__mode == "k" then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+local function checkConsoleExact()
+    for _, value in pairs(getgenv()) do
+        if type(value) == "table"
+            and value.AppendText
+            and value.Clear
+            and value.GetValue
+            and value.MaxLines == 50
+            and value.RichText == true
+            and value.AutoScroll == true
+            and value.ReadOnly == true
+            and value.Border == false
+            and value.Fill == true
+        then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function checkEnhancedRequestHooks()
+    local requestFunctions = {
+        syn and syn.request,
+        _G.request,
+        getgenv().request,
+        request,
+        http_request,
+        http and http.request
+    }
+
+    for _, requestFunction in pairs(requestFunctions) do
+        if requestFunction then
+            local representation = tostring(requestFunction)
+
+            if not representation:find("function:") then
+                return true
+            end
+
+            local informationSuccess, information = pcall(debug.getinfo, requestFunction)
+
+            if informationSuccess and information then
+                if information.what == "Lua" then
+                    return true
+                end
+
+                if information.nups and information.nups > 0 then
+                    for index = 1, information.nups do
+                        local name = debug.getupvalue(requestFunction, index)
+
+                        if name == "old" or name == "hook" or name == "original" then
+                            return true
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    if hookfunction and tostring(hookfunction):find("function:") then
+        for _, value in pairs(getgenv()) do
+            if type(value) == "function" then
+                local representation = tostring(value)
+
+                if representation:find("newcclosure")
+                    or representation:find("hookfunction")
+                then
+                    return true
+                end
+            end
+        end
+    end
+
+    return false
+end
+
+local function checkCopiedLogNotification()
+    local coreGui = game:GetService("CoreGui")
+
+    for _, child in pairs(coreGui:GetChildren()) do
+        if child.Name == "HttpSpy" then
+            local notificationFrame = child:FindFirstChild("NotificationFrame", true)
+
+            if notificationFrame then
+                local notificationText = notificationFrame:FindFirstChild("NotificationText", true)
+
+                if notificationText and notificationText.Text == "Log copied to clipboard!" then
+                    return true
+                end
+            end
+        end
+    end
+
+    return false
+end
+
+local function checkHttpSpyFunctions()
+    local environment = getgenv()
+
+    for _, value in pairs(environment) do
+        if type(value) == "function" then
+            local representation = tostring(value)
+
+            if representation:find("createLogEntry")
+                or representation:find("formatLogEntry")
+                or representation:find("sanitize")
+                or representation:find("serializer")
+            then
+                return true
+            end
+        end
+    end
+
+    for key, value in pairs(environment) do
+        if type(key) == "string" then
+            if key:find("fakehwid")
+                or key:find("fakeip")
+                or key:find("actualhwid")
+                or key:find("actualip")
+            then
+                return true
+            end
+
+            if key:find("band")
+                or key:find("bxor")
+                or key:find("bnot")
+                or key:find("lshift")
+                or key:find("rshift")
+            then
+                if type(value) == "function"
+                    and not tostring(value):find("function:")
+                then
+                    return true
+                end
+            end
+        end
+
+        if type(value) == "table" then
+            if value.int and value.string and value.setseed then
+                return true
+            end
+
+            if key == "functions" and type(value[1]) == "function" then
+                local hasRequest = false
+                local hasHttp = false
+
+                for _, child in pairs(value) do
+                    local representation = tostring(child)
+
+                    if representation:find("request") then
+                        hasRequest = true
+                    end
+
+                    if representation:find("http") then
+                        hasHttp = true
+                    end
+                end
+
+                if hasRequest and hasHttp then
+                    return true
+                end
+            end
+        end
+    end
+
+    return false
+end
+
+local function checkRuntimeAnalysis()
+    local environment = getgenv()
+    local dumpedFunctionCount = 0
+
+    for _, value in pairs(environment) do
+        if type(value) == "function" then
+            local success, result = pcall(function()
+                local dump = string.dump(value)
+                return dump:find("sanitize")
+                    or dump:find("createlog")
+                    or dump:find("notif")
+            end)
+
+            if success and result then
+                dumpedFunctionCount = dumpedFunctionCount + 1
+            end
+        end
+    end
+
+    local wrappedBuiltinCount = 0
+
+    if game.HttpService
+        and game.HttpService.JSONDecode
+        and not tostring(game.HttpService.JSONDecode):find("function:")
+    then
+        wrappedBuiltinCount = wrappedBuiltinCount + 1
+    end
+
+    if identifyexecutor
+        and not tostring(identifyexecutor):find("function:")
+    then
+        wrappedBuiltinCount = wrappedBuiltinCount + 1
+    end
+
+    local analytics = game:GetService("RbxAnalyticsService")
+
+    if analytics and analytics.GetClientId then
+        local success, clientId = pcall(function()
+            return analytics:GetClientId()
+        end)
+
+        if success and type(clientId) == "string" then
+            for _, value in pairs(environment) do
+                if type(value) == "string" and value:find(clientId) then
+                    wrappedBuiltinCount = wrappedBuiltinCount + 2
+                end
+            end
+        end
+    end
+
+    return dumpedFunctionCount >= 2 or wrappedBuiltinCount >= 2
+end
+
+local function checkExternalLoading()
+    local environment = getgenv()
+
+    if loadstring and not tostring(loadstring):find("function:") then
+        return true
+    end
+
+    if game.HttpGet and not tostring(game.HttpGet):find("function:") then
+        return true
+    end
+
+    for _, value in pairs(environment) do
+        if type(value) == "string" then
+            if value:find("raw%.githubusercontent%.com") and value:find("knockzoo") then
+                return true
+            end
+
+            if value:find("HTTP%-Spy") and value:find("main") then
+                return true
+            end
+
+            if value:find("ui%.lua") and value:find("github") then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+local function checkEnvironmentContamination()
+    local environment = getgenv()
+    local score = 0
+    local expectedKeys = {
+        "uilib",
+        "executor",
+        "version",
+        "functions",
+        "band",
+        "bxor",
+        "bnot",
+        "lshift",
+        "rshift",
+        "rshift1",
+        "random",
+        "sub",
+        "floor",
+        "fakehwid",
+        "fakeip",
+        "actualhwid",
+        "actualip",
+        "sanitize",
+        "search",
+        "serializer",
+        "hook"
+    }
+
+    for _, key in pairs(expectedKeys) do
+        if rawget(environment, key) then
+            score = score + 1
+        end
+    end
+
+    if rawget(environment, "hookfunction")
+        and rawget(environment, "newcclosure")
+    then
+        score = score + 2
+    end
+
+    if rawget(environment, "identifyexecutor") then
+        score = score + 1
+    end
+
+    for _, value in pairs(environment) do
+        if type(value) == "table" then
+            local matchingNames = 0
+
+            for key in pairs(value) do
+                if type(key) == "string" then
+                    local lowered = key:lower()
+
+                    if lowered:find("http")
+                        or lowered:find("request")
+                        or lowered:find("spy")
+                        or lowered:find("log")
+                        or lowered:find("sanitize")
+                    then
+                        matchingNames = matchingNames + 1
+                    end
+                end
+            end
+
+            if matchingNames >= 3 then
+                score = score + 2
+            end
+        end
+    end
+
+    return score >= 5
+end
+
+local function scanEnvironment()
+    local detected = false
+    local findings = {}
+
+    if runCheck(checkHttpSpyUI) then
+        table.insert(findings, "HTTP_SPY_UI")
+        detected = true
+    end
+
+    if runCheck(checkKnockzooHttpSpy) then
+        table.insert(findings, "KNOCKZOO_HTTP_SPY")
+        detected = true
+    end
+
+    if runCheck(checkExternalHttpSpy) then
+        table.insert(findings, "EXTERNAL_HTTP_SPY")
+        detected = true
+    end
+
+    if runCheck(checkHttpHookV2) then
+        table.insert(findings, "HTTP_HOOK_V2")
+        detected = true
+    end
+
+    if runCheck(checkDiscordIntercept) then
+        table.insert(findings, "DISCORD_INTERCEPT")
+        detected = true
+    end
+
+    if runCheck(checkReGui) then
+        table.insert(findings, "REGUI_SPECIFIC")
+        detected = true
+    end
+
+    if runCheck(checkHttpMethods) then
+        table.insert(findings, "HTTP_METHODS")
+        detected = true
+    end
+
+    if runCheck(checkHookSystem) then
+        table.insert(findings, "HOOK_SYSTEM")
+        detected = true
+    end
+
+    if runCheck(checkConsoleExact) then
+        table.insert(findings, "CONSOLE_EXACT")
+        detected = true
+    end
+
+    if runCheck(checkEnhancedRequestHooks) then
+        table.insert(findings, "ENHANCED_REQUEST_HOOKS")
+        detected = true
+    end
+
+    if runCheck(checkCopiedLogNotification) then
+        terminateClient("mwah")
+        detected = true
+    end
+
+    if runCheck(checkHttpSpyFunctions) then
+        table.insert(findings, "HTTP_SPY_FUNCTIONS")
+        detected = true
+    end
+
+    if runCheck(checkRuntimeAnalysis) then
+        table.insert(findings, "RUNTIME_ANALYSIS")
+        detected = true
+    end
+
+    if runCheck(checkExternalLoading) then
+        table.insert(findings, "EXTERNAL_LOADING")
+        detected = true
+    end
+
+    if runCheck(checkEnvironmentContamination) then
+        table.insert(findings, "ENVIRONMENT_CONTAMINATION")
+        detected = true
+    end
+
+    return detected, findings
+end
+
+local function installRuntimeMonitors()
+    local scanInterval = 0.5
+    local lastScan = 0
+    local consecutiveDetections = 0
+
+    RunService.Heartbeat:Connect(function()
+        if tick() - lastScan >= scanInterval then
+            lastScan = tick()
+
+            local detected, findings = scanEnvironment()
+
+            if detected then
+                consecutiveDetections = consecutiveDetections + 1
+
+                if consecutiveDetections >= 2 then
+                    terminateClient(
+                        "E-Trace ANTI-HOOK: i'm sorry but you can't hook me bro <3 ["
+                            .. table.concat(findings, "|")
+                            .. "]"
+                    )
+                end
+            else
+                consecutiveDetections = 0
+            end
+        end
+    end)
+
+    if getgenv and getgenv().loadstring then
+        local originalEnvironmentLoadstring = getgenv().loadstring
+
+        getgenv().loadstring = function(source, ...)
+            if type(source) == "string" then
+                local lowered = source:lower()
+
+                if lowered:find("knockzoo")
+                    or lowered:find("http%-spy")
+                    or lowered:find("createlog")
+                    or lowered:find("uilib")
+                then
+                    terminateClient("E-Trace ANTI-HOOK: i'm sorry but you can't hook me bro <3")
+                end
+            end
+
+            return originalEnvironmentLoadstring(source, ...)
+        end
+    end
+
+    local knownEnvironmentKeys = {}
+
+    for key in pairs(getgenv()) do
+        knownEnvironmentKeys[key] = true
+    end
+
+    spawn(function()
+        while wait(2) do
+            for key in pairs(getgenv()) do
+                if not knownEnvironmentKeys[key] then
+                    if type(key) == "string" then
+                        local lowered = key:lower()
+
+                        if lowered:find("uilib")
+                            or lowered:find("serializer")
+                            or lowered:find("httpspy")
+                        then
+                            terminateClient(
+                                "E-Trace ANTI-HOOK: i'm sorry but you can't hook me bro <3 ["
+                                    .. key
+                                    .. "]"
+                            )
+                        end
+                    end
+
+                    knownEnvironmentKeys[key] = true
+                end
+            end
+        end
+    end)
+end
+
+if loadstring then
+    local originalLoadstring = loadstring
+
+    getgenv().loadstring = function(source, ...)
+        if type(source) == "string" then
+            if source:find("raw%.githubusercontent%.com/depthso/Dear%-ReGui")
+                or source:find("Dear-ReGui/refs/heads/main/ReGui%.lua")
+            then
+                terminateClient("E-Trace ANTI-HOOK: i'm sorry but you can't hook me bro <3")
+            end
+        end
+
+        return originalLoadstring(source, ...)
+    end
+end
+
+local function periodicRunner()
+    while true do
+        local success, runnerError = pcall(function()
+            if type(immediateDetection) == "function" then
+                local detectionSuccess, detectionResult = pcall(immediateDetection)
+
+                if detectionSuccess and detectionResult then
+                    pcall(function()
+                        if type(detectionResult) == "table" then
+                            Player:Kick("E-Trace: immediate [" .. table.concat(detectionResult, "|") .. "]")
+                        else
+                            Player:Kick("E-Trace: immediate [" .. tostring(detectionResult) .. "]")
+                        end
+                    end)
+                end
+            end
+
+            if type(detect_httpspy) == "function" then
+                local detectionSuccess, detectionResult = pcall(detect_httpspy)
+
+                if detectionSuccess and detectionResult then
+                    pcall(function()
+                        if type(detectionResult) == "table" then
+                            Player:Kick("E-Trace: httpspy [" .. table.concat(detectionResult, "|") .. "]")
+                        else
+                            Player:Kick("E-Trace: httpspy")
+                        end
+                    end)
+                end
+            end
+
+            if type(detectHTTPSpy) == "function" then
+                local detectionSuccess, detectionResult = pcall(detectHTTPSpy)
+
+                if detectionSuccess and detectionResult then
+                    pcall(function()
+                        if type(detectionResult) == "table" then
+                            Player:Kick("E-Trace: httpSpy [" .. table.concat(detectionResult, "|") .. "]")
+                        else
+                            Player:Kick("E-Trace: httpSpy")
+                        end
+                    end)
+                end
+            end
+
+            if type(detectEDAntiKick) == "function" then
+                local detectionSuccess, detectionResult = pcall(detectEDAntiKick)
+
+                if detectionSuccess and detectionResult then
+                    pcall(function()
+                        Player:Kick("E-Trace: anti-kick detected")
+                    end)
+                end
+            end
+
+            if type(pick_request) == "function" then
+                local requestSuccess, requestFunction, requestScore = pcall(pick_request)
+
+                if requestSuccess
+                    and (not requestFunction
+                        or (type(requestScore) == "number" and requestScore < 1))
+                then
+                    pcall(function()
+                        Player:Kick("E-Trace: request entry suspicious")
+                    end)
+                end
+            end
+
+            local environmentSuccess, environmentFlagged = pcall(function()
+                local environment = getgenv()
+                return rawget(environment, "uilib")
+                    or rawget(environment, "serializer")
+                    or rawget(environment, "WebStealer")
+            end)
+
+            if environmentSuccess and environmentFlagged then
+                pcall(function()
+                    Player:Kick("E-Trace: env flagged")
+                end)
+            end
+        end)
+
+        if not success then
+            warn("E-Trace periodic runner error:", runnerError)
+        end
+
+        task.wait(3)
+    end
+end
+
+task.spawn(periodicRunner)
+
+wait(1)
+
+local detected, findings = scanEnvironment()
+
+if detected then
+    terminateClient(
+        "E-Trace ANTI-HOOK: i'm sorry but you can't hook me bro <3 ["
+            .. table.concat(findings, "|")
+            .. "]"
+    )
+else
+    installRuntimeMonitors()
+end
+
+print("e-trace http anti-spy active!!!!!!!!!!!! uwu")
